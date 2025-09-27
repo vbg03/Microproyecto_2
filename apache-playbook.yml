@@ -1,0 +1,62 @@
+---
+- name: Instalar y configurar Apache en web-node
+  hosts: web-node
+  become: yes
+  tasks:
+    - name: Actualizar cache de paquetes
+      apt:
+        update_cache: yes
+
+    - name: Instalar Apache2
+      apt:
+        name: apache2
+        state: present
+
+    - name: Asegurar que Apache esté iniciado y habilitado
+      systemd:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Crear página de bienvenida personalizada
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>¡Bienvenido!</title>
+              <style>
+                  body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+                  h1 { color: #2c3e50; }
+                  .container { max-width: 600px; margin: 0 auto; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>¡Apache configurado exitosamente!</h1>
+                  <p>Esta página fue configurada automáticamente usando:</p>
+                  <ul style="text-align: left; display: inline-block;">
+                      <li>Vagrant - para crear las máquinas virtuales</li>
+                      <li>Terraform - para gestionar la infraestructura</li>
+                      <li>Ansible - para configurar Apache</li>
+                  </ul>
+                  <p><strong>Servidor:</strong> {{ ansible_hostname }}</p>
+                  <p><strong>IP:</strong> {{ ansible_default_ipv4.address }}</p>
+                  <p><strong>Fecha:</strong> {{ ansible_date_time.date }}</p>
+              </div>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Verificar que Apache esté funcionando
+      uri:
+        url: http://localhost
+        method: GET
+      register: apache_status
+
+    - name: Mostrar estado de Apache
+      debug:
+        msg: "Apache está funcionando correctamente - Status: {{ apache_status.status }}"
